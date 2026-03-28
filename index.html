@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aura Booth - Kamera Test</title>
+    <style>
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            color: #333;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        video {
+            border-radius: 15px;
+            background-color: #f0f0f0;
+            transform: scaleX(-1); /* Efek cermin biar seperti kaca */
+        }
+        canvas {
+            border-radius: 15px;
+            margin-top: 20px;
+            display: none; /* Disembunyikan dulu sampai tombol ditekan */
+            transform: scaleX(-1);
+        }
+        button {
+            margin-top: 20px;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            background-color: #b19cd9; /* Ungu pastel */
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        button:hover {
+            background-color: #9b7ede;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>✨ Test Kamera Aura Booth ✨</h2>
+        
+        <video id="kamera" width="400" height="300" autoplay playsinline></video>
+        
+        <br>
+        
+        <button id="tombolJepret">📸 Jepret Foto!</button>
+        
+        <br>
+
+        <canvas id="hasilFoto" width="400" height="300"></canvas>
+    </div>
+
+    <script>
+        // Mengambil elemen dari HTML
+        const video = document.getElementById('kamera');
+        const canvas = document.getElementById('hasilFoto');
+        const tombolJepret = document.getElementById('tombolJepret');
+        const context = canvas.getContext('2d');
+
+        // Fungsi untuk menyalakan kamera
+        async function mulaiKamera() {
+            try {
+                // Meminta izin akses webcam
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+            } catch (error) {
+                console.error("Waduh, kamera gagal diakses:", error);
+                alert("Tolong izinkan akses kamera di browsermu ya!");
+            }
+        }
+
+        // Panggil fungsi saat web dibuka
+        mulaiKamera();
+
+        // Fungsi saat tombol jepret ditekan
+        tombolJepret.addEventListener('click', () => {
+            // Tampilkan canvas (hasil foto)
+            canvas.style.display = 'block';
+            
+            // Gambar frame video saat ini ke dalam canvas
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        });
+    </script>
+
+</body>
+</html>
