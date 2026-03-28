@@ -24,8 +24,21 @@ h1.logo {
     width: 90%;
     justify-items: center;
 }
+/* Container pembungkus canvas */
+.canvas-container {
+    margin: 20px auto !important;
+    max-width: 340px; /* Ukuran tampilan di layar */
+    border: 8px solid white;
+    border-radius: 5px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
 
-/* ... (Copy sisa kode CSS dari pesan sebelumnya mulai dari .control-panel sampai .foto-hasil) ... */
+/* Memastikan canvas tetap tajam */
+#editorCanvas {
+    width: 100% !important;
+    height: auto !important;
+    image-rendering: auto;
+}
 
 /* Aku singkat agar pesannya tidak terlalu panjang, 
 pastikan kamu menyalin SEMUA kode CSS dari tag <style> di pesanku sebelumnya ya! */
