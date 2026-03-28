@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aura Booth - Kamera Test</title>
+    <title>Aura Booth - Photo Strip</title>
     <style>
         body {
             font-family: 'Quicksand', sans-serif;
@@ -11,7 +11,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            padding: 40px 0;
             min-height: 100vh;
             margin: 0;
             color: #333;
@@ -22,17 +22,25 @@
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             text-align: center;
+            position: relative; /* Penting untuk posisi tulisan hitung mundur */
         }
         video {
             border-radius: 15px;
             background-color: #f0f0f0;
-            transform: scaleX(-1); /* Efek cermin biar seperti kaca */
+            transform: scaleX(-1); /* Efek cermin */
         }
-        canvas {
-            border-radius: 15px;
-            margin-top: 20px;
-            display: none; /* Disembunyikan dulu sampai tombol ditekan */
-            transform: scaleX(-1);
+        /* Tulisan Hitung Mundur (3, 2, 1) di tengah video */
+        #countdown {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 80px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+            display: none; /* Disembunyikan awalnya */
+            z-index: 10;
         }
         button {
             margin-top: 20px;
@@ -40,7 +48,7 @@
             font-size: 16px;
             font-weight: bold;
             color: white;
-            background-color: #b19cd9; /* Ungu pastel */
+            background-color: #b19cd9;
             border: none;
             border-radius: 50px;
             cursor: pointer;
@@ -49,54 +57,119 @@
         button:hover {
             background-color: #9b7ede;
         }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        /* Wadah untuk Photo Strip (kertas putihnya) */
+        #stripContainer {
+            margin-top: 30px;
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 10px; /* Jarak antar foto */
+            display: none; /* Disembunyikan sampai foto selesai diambil */
+        }
+        .foto-hasil {
+            border-radius: 5px;
+            transform: scaleX(-1); /* Membalikkan hasil agar sesuai dengan yang dilihat user */
+        }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h2>✨ Test Kamera Aura Booth ✨</h2>
+        <h2>✨ Aura Booth ✨</h2>
         
-        <video id="kamera" width="400" height="300" autoplay playsinline></video>
+        <div style="position: relative; display: inline-block;">
+            <video id="kamera" width="400" height="300" autoplay playsinline></video>
+            <div id="countdown">3</div>
+        </div>
         
         <br>
-        
-        <button id="tombolJepret">📸 Jepret Foto!</button>
-        
-        <br>
-
-        <canvas id="hasilFoto" width="400" height="300"></canvas>
+        <button id="tombolJepret">📸 Mulai Sesi Foto (3x)</button>
     </div>
 
-    <script>
-        // Mengambil elemen dari HTML
-        const video = document.getElementById('kamera');
-        const canvas = document.getElementById('hasilFoto');
-        const tombolJepret = document.getElementById('tombolJepret');
-        const context = canvas.getContext('2d');
+    <div id="stripContainer">
+        </div>
 
-        // Fungsi untuk menyalakan kamera
+    <script>
+        const video = document.getElementById('kamera');
+        const tombolJepret = document.getElementById('tombolJepret');
+        const countdownEl = document.getElementById('countdown');
+        const stripContainer = document.getElementById('stripContainer');
+
+        let jumlahFotoMaksimal = 3;
+        let fotoTerambil = 0;
+
+        // Nyalakan kamera
         async function mulaiKamera() {
             try {
-                // Meminta izin akses webcam
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 video.srcObject = stream;
             } catch (error) {
-                console.error("Waduh, kamera gagal diakses:", error);
-                alert("Tolong izinkan akses kamera di browsermu ya!");
+                alert("Izinkan akses kamera ya!");
             }
         }
-
-        // Panggil fungsi saat web dibuka
         mulaiKamera();
 
-        // Fungsi saat tombol jepret ditekan
+        // Fungsi saat tombol ditekan
         tombolJepret.addEventListener('click', () => {
-            // Tampilkan canvas (hasil foto)
-            canvas.style.display = 'block';
-            
-            // Gambar frame video saat ini ke dalam canvas
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            // Reset dari awal kalau mau foto ulang
+            stripContainer.innerHTML = ''; 
+            fotoTerambil = 0;
+            stripContainer.style.display = 'flex';
+            tombolJepret.disabled = true; // Matikan tombol sementara
+
+            ambilFotoBeruntun();
         });
+
+        function ambilFotoBeruntun() {
+            if (fotoTerambil >= jumlahFotoMaksimal) {
+                // Jika sudah 3 foto, selesai
+                tombolJepret.disabled = false;
+                tombolJepret.innerText = "📸 Ulangi Foto";
+                return;
+            }
+
+            let hitungan = 3;
+            countdownEl.innerText = hitungan;
+            countdownEl.style.display = 'block';
+
+            // Timer hitung mundur tiap 1 detik
+            let timer = setInterval(() => {
+                hitungan--;
+                if (hitungan > 0) {
+                    countdownEl.innerText = hitungan;
+                } else {
+                    clearInterval(timer); // Hentikan timer
+                    countdownEl.style.display = 'none'; // Sembunyikan angka
+                    
+                    jepretSatuFoto(); // Ambil foto!
+                    fotoTerambil++;
+                    
+                    // Jeda 1 detik sebelum mulai hitung mundur foto berikutnya
+                    setTimeout(ambilFotoBeruntun, 1000); 
+                }
+            }, 1000);
+        }
+
+        function jepretSatuFoto() {
+            // Buat elemen canvas baru untuk setiap foto
+            const canvasBaru = document.createElement('canvas');
+            canvasBaru.width = 400;
+            canvasBaru.height = 300;
+            canvasBaru.className = 'foto-hasil';
+            
+            const context = canvasBaru.getContext('2d');
+            context.drawImage(video, 0, 0, canvasBaru.width, canvasBaru.height);
+            
+            // Masukkan foto ke dalam strip putih
+            stripContainer.appendChild(canvasBaru);
+        }
     </script>
 
 </body>
