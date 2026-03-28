@@ -3,174 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aura Booth - Photo Strip</title>
-    <style>
-        body {
-            font-family: 'Quicksand', sans-serif;
-            background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 40px 0;
-            min-height: 100vh;
-            margin: 0;
-            color: #333;
-        }
-        .container {
-            background: white;
-            padding: 20px;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            text-align: center;
-            position: relative; /* Penting untuk posisi tulisan hitung mundur */
-        }
-        video {
-            border-radius: 15px;
-            background-color: #f0f0f0;
-            transform: scaleX(-1); /* Efek cermin */
-        }
-        /* Tulisan Hitung Mundur (3, 2, 1) di tengah video */
-        #countdown {
-            position: absolute;
-            top: 40%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 80px;
-            font-weight: bold;
-            color: white;
-            text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
-            display: none; /* Disembunyikan awalnya */
-            z-index: 10;
-        }
-        button {
-            margin-top: 20px;
-            padding: 12px 24px;
-            font-size: 16px;
-            font-weight: bold;
-            color: white;
-            background-color: #b19cd9;
-            border: none;
-            border-radius: 50px;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-        button:hover {
-            background-color: #9b7ede;
-        }
-        button:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
-        }
-        /* Wadah untuk Photo Strip (kertas putihnya) */
-        #stripContainer {
-            margin-top: 30px;
-            background: white;
-            padding: 15px;
-            border-radius: 5px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            display: flex;
-            flex-direction: column;
-            gap: 10px; /* Jarak antar foto */
-            display: none; /* Disembunyikan sampai foto selesai diambil */
-        }
-        .foto-hasil {
-            border-radius: 5px;
-            transform: scaleX(-1); /* Membalikkan hasil agar sesuai dengan yang dilihat user */
-        }
-    </style>
+    <title>Aura Booth - Total Custom Edition</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
-    <div class="container">
-        <h2>✨ Aura Booth ✨</h2>
+    <h1 class="logo">Aura Booth</h1>
+
+    <div class="main-layout">
         
-        <div style="position: relative; display: inline-block;">
-            <video id="kamera" width="400" height="300" autoplay playsinline></video>
-            <div id="countdown">3</div>
+        <div class="control-panel">
+            <h2>✨ Mulai ✨</h2>
+            
+            <div class="video-wrapper">
+                <video id="kamera" autoplay playsinline></video>
+                <div id="countdown">3</div>
+            </div>
+            
+            <button id="tombolJepret" class="btn">📸 Ambil 3 Foto Beruntun</button>
+            <div class="or-text">...atau...</div>
+            <label for="inputUpload" id="tombolUpload" class="btn btn-upload-label">📂 Unggah 3 Gambar Kustom</label>
+            <input type="file" id="inputUpload" multiple accept="image/*" style="display:none">
         </div>
         
-        <br>
-        <button id="tombolJepret">📸 Mulai Sesi Foto (3x)</button>
+        <div class="frame-panel">
+            <h2>✨ Hasil ✨</h2>
+            
+            <div id="finalWrapper">
+                <div class="strip-header-text">Your Aura Strip</div>
+                <div id="stripContainer">
+                    <div style="color:#aaa; padding: 50px 0;">Sesi Foto atau Unggah untuk melihat hasil...</div>
+                </div>
+                <div class="frame-label">Aura-Fiksasi (v1.5)</div>
+                <div class="frame-title">#CUSTOM-STRIP</div>
+            </div>
+            
+            <button id="tombolDownload" class="btn" disabled>💾 Unduh Photo Strip (.png)</button>
+        </div>
     </div>
-
-    <div id="stripContainer">
-        </div>
-
-    <script>
-        const video = document.getElementById('kamera');
-        const tombolJepret = document.getElementById('tombolJepret');
-        const countdownEl = document.getElementById('countdown');
-        const stripContainer = document.getElementById('stripContainer');
-
-        let jumlahFotoMaksimal = 3;
-        let fotoTerambil = 0;
-
-        // Nyalakan kamera
-        async function mulaiKamera() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                video.srcObject = stream;
-            } catch (error) {
-                alert("Izinkan akses kamera ya!");
-            }
-        }
-        mulaiKamera();
-
-        // Fungsi saat tombol ditekan
-        tombolJepret.addEventListener('click', () => {
-            // Reset dari awal kalau mau foto ulang
-            stripContainer.innerHTML = ''; 
-            fotoTerambil = 0;
-            stripContainer.style.display = 'flex';
-            tombolJepret.disabled = true; // Matikan tombol sementara
-
-            ambilFotoBeruntun();
-        });
-
-        function ambilFotoBeruntun() {
-            if (fotoTerambil >= jumlahFotoMaksimal) {
-                // Jika sudah 3 foto, selesai
-                tombolJepret.disabled = false;
-                tombolJepret.innerText = "📸 Ulangi Foto";
-                return;
-            }
-
-            let hitungan = 3;
-            countdownEl.innerText = hitungan;
-            countdownEl.style.display = 'block';
-
-            // Timer hitung mundur tiap 1 detik
-            let timer = setInterval(() => {
-                hitungan--;
-                if (hitungan > 0) {
-                    countdownEl.innerText = hitungan;
-                } else {
-                    clearInterval(timer); // Hentikan timer
-                    countdownEl.style.display = 'none'; // Sembunyikan angka
-                    
-                    jepretSatuFoto(); // Ambil foto!
-                    fotoTerambil++;
-                    
-                    // Jeda 1 detik sebelum mulai hitung mundur foto berikutnya
-                    setTimeout(ambilFotoBeruntun, 1000); 
-                }
-            }, 1000);
-        }
-
-        function jepretSatuFoto() {
-            // Buat elemen canvas baru untuk setiap foto
-            const canvasBaru = document.createElement('canvas');
-            canvasBaru.width = 400;
-            canvasBaru.height = 300;
-            canvasBaru.className = 'foto-hasil';
-            
-            const context = canvasBaru.getContext('2d');
-            context.drawImage(video, 0, 0, canvasBaru.width, canvasBaru.height);
-            
-            // Masukkan foto ke dalam strip putih
-            stripContainer.appendChild(canvasBaru);
-        }
-    </script>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <script src="js/script.js"></script>
 </body>
 </html>
