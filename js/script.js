@@ -1,171 +1,62 @@
-// ==========================================
-// 1. INISIALISASI & VARIABEL
-// ==========================================
-const video = document.getElementById('kamera');
-const tombolJepret = document.getElementById('tombolJepret');
-const countdownEl = document.getElementById('countdown');
-const tombolDownload = document.getElementById('tombolDownload');
-const tombolTambahStiker = document.getElementById('tombolTambahStiker');
-
-const lebarStrip = 340;
-const tinggiStrip = 950;
-let fotoTerambil = 0;
-let arrayFoto = [];
-
-// Inisialisasi Canvas Fabric.js
+// 1. Inisialisasi Canvas (Ukuran Fix 340x950)
 const canvasEditor = new fabric.Canvas('editorCanvas', {
-    width: lebarStrip,
-    height: tinggiStrip,
+    width: 340,
+    height: 950,
     backgroundColor: '#ffffff'
 });
 
-// ==========================================
-// 2. FUNGSI RENDER BINGKAI (LAYER PALING ATAS)
-// ==========================================
-function renderBingkai() {
-    // Kita panggil frame PNG transparan dari Figma
-    fabric.Image.fromURL('assets/frames/frame_aura.png', function(img) {
-        img.set({
-            left: 0,
-            top: 0,
-            scaleX: lebarStrip / img.width,
-            scaleY: tinggiStrip / img.height,
-            selectable: false, // Frame tidak boleh kegeser
-            evented: false,    // Frame tidak merespon klik (biar stiker di bawahnya bisa diklik)
-            name: 'layer_frame'
-        });
-        canvasEditor.add(img);
-        img.bringToFront(); // PAKSA ke paling depan
-        canvasEditor.renderAll();
-    }, { crossOrigin: 'anonymous' });
-}
-
-// Jalankan bingkai pertama kali
-renderBingkai();
-
-// ==========================================
-// 3. LOGIKA KAMERA
-// ==========================================
-async function mulaiKamera() {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        video.srcObject = stream;
-    } catch (err) {
-        console.error("Kamera error:", err);
-        alert("Gagal akses kamera!");
-    }
-}
-mulaiKamera();
-
-// ==========================================
-// 4. PROSES AMBIL FOTO (3X)
-// ==========================================
-tombolJepret.addEventListener('click', () => {
-    fotoTerambil = 0;
-    arrayFoto = [];
-    canvasEditor.clear(); // Bersihkan canvas untuk sesi baru
+// 2. Fungsi Utama: Susun Foto & Bingkai
+function susunFotoKeCanvas(dataFotos) {
+    canvasEditor.clear(); // Bersihkan canvas
     
-    // Pasang background warna dasar dulu
-    const bgDasar = new fabric.Rect({
-        width: lebarStrip, height: tinggiStrip,
-        fill: '#fcf0ff', selectable: false, evented: false
+    // Background dasar (paling bawah)
+    const bg = new fabric.Rect({
+        width: 340, height: 950,
+        fill: '#F9E4F2', 
+        selectable: false, evented: false
     });
-    canvasEditor.add(bgDasar);
+    canvasEditor.add(bg);
 
-    ambilFotoBeruntun();
-});
-
-function ambilFotoBeruntun() {
-    if (fotoTerambil >= 3) {
-        susunFotoKeCanvas();
-        return;
-    }
-
-    let timer = 3;
-    countdownEl.innerText = timer;
-    countdownEl.style.display = 'block';
-
-    let interval = setInterval(() => {
-        timer--;
-        if (timer > 0) {
-            countdownEl.innerText = timer;
-        } else {
-            clearInterval(interval);
-            countdownEl.style.display = 'none';
+    // Masukkan 3 Foto hasil jepretan
+    dataFotos.forEach((dataUrl, index) => {
+        fabric.Image.fromURL(dataUrl, function(imgFoto) {
+            imgFoto.scaleToWidth(280); // Ukuran foto agar masuk ke lubang
             
-            // Jepret!
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = 400; tempCanvas.height = 300;
-            tempCanvas.getContext('2d').drawImage(video, 0, 0, 400, 300);
-            arrayFoto.push(tempCanvas.toDataURL('image/png'));
-            
-            fotoTerambil++;
-            setTimeout(ambilFotoBeruntun, 1000);
-        }
-    }, 1000);
-}
-
-// ==========================================
-// 5. MENYUSUN FOTO DI BELAKANG BINGKAI
-// ==========================================
-function susunFotoKeCanvas() {
-    arrayFoto.forEach((data, index) => {
-        fabric.Image.fromURL(data, function(imgFoto) {
-            imgFoto.scaleToWidth(280); // Ukuran foto disesuaikan lubang Figma
-            
-            // KALIBRASI POSISI: Atur angka 110 dan 250 ini agar pas di lubangmu
-            const posisiY = 110 + (index * 255); 
+            // Jarak vertikal (atur angka 120 & 260 ini jika foto kurang pas di lubang)
+            const posisiY = 120 + (index * 260); 
 
             imgFoto.set({
-                left: lebarStrip / 2,
+                left: 170, // Tengah (340 / 2)
                 top: posisiY,
                 originX: 'center',
                 originY: 'center',
-                selectable: false // Foto dikunci agar user fokus geser stiker
+                selectable: true // User bisa geser dikit fotonya biar pas
             });
             
             canvasEditor.add(imgFoto);
-            imgFoto.sendToBack(); // Taruh di belakang Frame
             
-            // Pastikan background dasar tetap paling belakang
-            canvasEditor.getObjects().forEach(obj => {
-                if(obj.fill === '#fcf0ff') obj.sendToBack();
-            });
+            // Jika sudah foto terakhir, tumpuk bingkai di paling depan
+            if (index === dataFotos.length - 1) {
+                pasangBingkaiTransparan();
+            }
         });
     });
-
-    // Panggil ulang render bingkai agar dia menutupi foto
-    renderBingkai();
-    tombolDownload.disabled = false;
 }
 
-// ==========================================
-// 6. FITUR STIKER & DOWNLOAD
-// ==========================================
-tombolTambahStiker.addEventListener('click', () => {
-    // Ganti 'pita.png' dengan file yang ada di folder assets/stickers/ kamu
-    const urlStiker = 'assets/stickers/pita.png'; 
-    
-    fabric.Image.fromURL(urlStiker, function(stiker) {
-        stiker.scaleToWidth(100);
-        stiker.set({
-            left: 170, top: 475,
-            originX: 'center', originY: 'center',
-            cornerColor: '#b19cd9', cornerStyle: 'circle', cornerSize: 10
+// 3. Fungsi Menempelkan Bingkai PNG dari Figma
+function pasangBingkaiTransparan() {
+    fabric.Image.fromURL('assets/frames/strip.png', function(imgFrame) {
+        imgFrame.set({
+            left: 0,
+            top: 0,
+            scaleX: 340 / imgFrame.width, // Paksa lebar 340px
+            scaleY: 950 / imgFrame.height, // Paksa tinggi 950px
+            selectable: false, // Biar bingkai gak kegeser
+            evented: false,    // Klik akan tembus ke foto/stiker di bawahnya
         });
-        canvasEditor.add(stiker);
         
-        // PENTING: Stiker harus di depan foto tapi di belakang Frame? 
-        // Biasanya stiker justru di PALING DEPAN (di atas frame) biar keren.
-        stiker.bringToFront(); 
+        canvasEditor.add(imgFrame);
+        imgFrame.bringToFront(); // Wajib di depan sendiri
+        canvasEditor.renderAll();
     });
-});
-
-tombolDownload.addEventListener('click', () => {
-    canvasEditor.discardActiveObject();
-    canvasEditor.renderAll();
-    const link = document.createElement('a');
-    link.href = canvasEditor.toDataURL({ format: 'png', quality: 1 });
-    link.download = `Aura_Booth_${Date.now()}.png`;
-    link.click();
-});
+}
