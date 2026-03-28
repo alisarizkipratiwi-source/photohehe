@@ -1,61 +1,221 @@
-// js/script.js
+// ==========================================
+// DEKLARASI VARIABEL UTAMA
+// ==========================================
 const video = document.getElementById('kamera');
 const tombolJepret = document.getElementById('tombolJepret');
 const countdownEl = document.getElementById('countdown');
-const stripContainer = document.getElementById('stripContainer');
 const tombolUpload = document.getElementById('tombolUpload');
 const inputUpload = document.getElementById('inputUpload');
 const tombolDownload = document.getElementById('tombolDownload');
+const tombolTambahStiker = document.getElementById('tombolTambahStiker');
 
 let jumlahFotoMaksimal = 3;
 let fotoTerambil = 0;
-let finalCanvases = []; 
+let arrayFoto = []; // Menyimpan gambar hasil jepretan/unggahan
 
-// Fungsi menyalakan kamera
+// ==========================================
+// INISIALISASI KANVAS FABRIC.JS
+// ==========================================
+// Kita buat kanvas ukuran 340x950 (seukuran photo strip)
+const canvasEditor = new fabric.Canvas('editorCanvas', {
+    width: 340,
+    height: 950,
+    backgroundColor: '#ffffff'
+});
+
+// Fungsi untuk menggambar bingkai dasar (Aura) agar tidak bisa digeser user
+function gambarBingkaiDasar() {
+    // Buat kotak putih sebagai dasar
+    const background = new fabric.Rect({
+        left: 0, top: 0,
+        width: 340, height: 950,
+        fill: '#ffffff',
+        selectable: false, // Tidak bisa diklik/digeser
+        evented: false
+    });
+
+    // Buat border ungu pinggiran
+    const border = new fabric.Rect({
+        left: 5, top: 5,
+        width: 330, height: 940,
+        fill: 'transparent',
+        stroke: '#D8B4E2',
+        strokeWidth: 4,
+        selectable: false,
+        evented: false
+    });
+
+    // Buat teks judul di atas
+    const teksJudul = new fabric.Text('Your Aura Strip', {
+        left: 170, top: 30,
+        fontFamily: 'Quicksand',
+        fontSize: 24,
+        fontWeight: 'bold',
+        fill: '#4A3B52',
+        originX: 'center',
+        selectable: false,
+        evented: false
+    });
+
+    canvasEditor.add(background, border, teksJudul);
+}
+// Panggil saat pertama kali dimuat
+gambarBingkaiDasar();
+
+// ==========================================
+// LOGIKA KAMERA & FOTO BERUNTUN
+// ==========================================
 async function mulaiKamera() {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         video.srcObject = stream;
     } catch (error) {
-        alert("Izinkan akses kamera ya!");
+        alert("Waduh, izinkan akses kamera ya!");
     }
 }
 mulaiKamera();
 
-// ... (Copy sisa kode JavaScript dari pesanku sebelumnya mulai dari tombolJepret.addEventListener sampai ke fungsi loadImage) ...
+tombolJepret.addEventListener('click', () => {
+    persiapanSesiBaru();
+    ambilFotoBeruntun();
+});
 
-/* Pastikan menyalin SEMUA kode JS dari tag <script> di pesanku sebelumnya. */
+function persiapanSesiBaru() {
+    fotoTerambil = 0;
+    arrayFoto = [];
+    tombolJepret.disabled = true;
+    tombolUpload.disabled = true;
+    tombolDownload.disabled = true;
+    
+    // Bersihkan kanvas dari foto/stiker lama, lalu gambar bingkai dasar lagi
+    canvasEditor.clear();
+    gambarBingkaiDasar();
+}
+
+function ambilFotoBeruntun() {
+    if (fotoTerambil >= jumlahFotoMaksimal) {
+        susunFotoKeKanvas();
+        return;
+    }
+
+    let hitungan = 3;
+    countdownEl.innerText = hitungan;
+    countdownEl.style.display = 'block';
+
+    let timer = setInterval(() => {
+        hitungan--;
+        if (hitungan > 0) {
+            countdownEl.innerText = hitungan;
+        } else {
+            clearInterval(timer);
+            countdownEl.style.display = 'none';
+            
+            simpanSatuFoto();
+            fotoTerambil++;
+            
+            setTimeout(ambilFotoBeruntun, 1000); 
+        }
+    }, 1000);
+}
+
+function simpanSatuFoto() {
+    // Ambil gambar dari video ke elemen canvas sementara (tersembunyi)
+    const hiddenCanvas = document.createElement('canvas');
+    hiddenCanvas.width = 400; hiddenCanvas.height = 300;
+    const ctx = hiddenCanvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, 400, 300);
+    
+    // Simpan data gambarnya (base64) ke dalam array
+    arrayFoto.push(hiddenCanvas.toDataURL('image/png'));
+}
+
 // ==========================================
-// FITUR EDITOR STIKER (FABRIC.JS)
+// MEMASUKKAN FOTO KE DALAM KANVAS EDITOR
 // ==========================================
+function susunFotoKeKanvas() {
+    // Loop untuk ketiga foto yang sudah diambil
+    arrayFoto.forEach((dataURL, index) => {
+        fabric.Image.fromURL(dataURL, function(img) {
+            // Atur ukuran foto agar pas di dalam strip
+            img.scaleToWidth(280); 
+            
+            // Hitung posisi Y agar fotonya berjejer ke bawah
+            // Foto 1 di atas, Foto 2 di tengah, Foto 3 di bawah
+            const posisiY = 80 + (index * 230); 
 
-// Fungsi untuk menambahkan stiker ke dalam canvas editor nanti
-function tambahStiker(namaFileStiker) {
-    // Alamat letak file stikermu
-    const urlStiker = `assets/stickers/${namaFileStiker}`;
+            img.set({
+                left: 170, // Posisi X di tengah kanvas (340/2)
+                top: posisiY,
+                originX: 'center', // Titik jangkar di tengah
+                selectable: false, // Fotonya kita kunci biar nggak kegeser user
+                evented: false,
+                stroke: '#ccc', // Kasih border abu-abu tipis di fotonya
+                strokeWidth: 2
+            });
 
-    fabric.Image.fromURL(urlStiker, function(img) {
-        // Atur ukuran awal stiker biar nggak kebesaran
-        img.scale(0.5); 
+            // Masukkan ke kanvas
+            canvasEditor.add(img);
+            
+            // Pastikan stiker selalu di atas foto (kalau ada)
+            img.sendToBack(); 
+        });
+    });
+
+    // Aktifkan kembali tombol-tombol
+    tombolJepret.disabled = false;
+    tombolUpload.disabled = false;
+    tombolDownload.disabled = false;
+    tombolJepret.innerText = "📸 Ulangi Foto (3x)";
+}
+
+// ==========================================
+// FITUR STIKER INTERAKTIF (DRAG & DROP)
+// ==========================================
+tombolTambahStiker.addEventListener('click', () => {
+    // Pastikan kamu punya file 'pita.png' di folder 'assets/stickers/'
+    // Jika tidak ada, kode ini akan gagal memuat gambar.
+    // Sementara kita pakai gambar dummy dari internet agar tidak error saat kamu coba:
+    const urlStiker = 'https://cdn-icons-png.flaticon.com/512/3204/3204558.png'; // Ganti jadi 'assets/stickers/pita.png' nanti
+    
+    fabric.Image.fromURL(urlStiker, function(stiker) {
+        stiker.scaleToWidth(80); // Ukuran awal stiker
         
-        // Atur posisi awal stiker di tengah
-        img.set({
-            left: 100,
-            top: 100,
+        stiker.set({
+            left: 170, // Muncul di tengah
+            top: 450,
+            originX: 'center',
+            originY: 'center',
             transparentCorners: false,
-            cornerColor: '#b19cd9', // Warna kotak-kotak pengubah ukuran (ungu pastel)
+            cornerColor: '#b19cd9', // Warna kotak-kotak resize aesthetic
             cornerStrokeColor: '#fff',
             borderColor: '#b19cd9',
             cornerSize: 12,
-            padding: 10,
+            padding: 5,
             cornerStyle: 'circle'
         });
 
-        // Nanti gambar ini akan kita masukkan ke Canvas Utama (sedang kita siapkan)
-        console.log("Stiker berhasil dimuat:", namaFileStiker);
-        alert("Stiker " + namaFileStiker + " siap dimainkan! (Cek Console)");
-    });
-}
+        canvasEditor.add(stiker);
+        canvasEditor.setActiveObject(stiker); // Otomatis dipilih setelah ditambah
+    }, { crossOrigin: 'anonymous' }); // Diperlukan jika ambil gambar dari URL luar
+});
 
-// Cara memanggilnya (nanti kita hubungkan ke tombol):
-// tambahStiker('pita.png');
+// ==========================================
+// FITUR UNDUH (DOWNLOAD) KANVAS
+// ==========================================
+tombolDownload.addEventListener('click', () => {
+    // Hilangkan dulu garis seleksi stiker sebelum di-download
+    canvasEditor.discardActiveObject();
+    canvasEditor.renderAll();
+
+    // Ubah isi kanvas menjadi file gambar
+    const dataURL = canvasEditor.toDataURL({
+        format: 'png',
+        quality: 1
+    });
+
+    // Buat link download otomatis
+    const link = document.createElement('a');
+    link.href = dataURL;
+    link.download = `Aura_Strip_${new Date().getTime()}.png`;
+    link.click();
+});
