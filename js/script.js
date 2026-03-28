@@ -25,39 +25,37 @@ const canvasEditor = new fabric.Canvas('editorCanvas', {
 
 // Fungsi untuk menggambar bingkai dasar (Aura) agar tidak bisa digeser user
 function gambarBingkaiDasar() {
-    // Buat kotak putih sebagai dasar
-    const background = new fabric.Rect({
+function gambarBingkaiDasar() {
+    // 1. Bersihkan kanvas dulu
+    canvasEditor.clear();
+
+    // 2. Tambahkan warna background paling belakang 
+    // (Bisa kamu ganti warna pastel favoritmu)
+    const bgWarna = new fabric.Rect({
         left: 0, top: 0,
         width: 340, height: 950,
-        fill: '#ffffff',
-        selectable: false, // Tidak bisa diklik/digeser
-        evented: false
-    });
-
-    // Buat border ungu pinggiran
-    const border = new fabric.Rect({
-        left: 5, top: 5,
-        width: 330, height: 940,
-        fill: 'transparent',
-        stroke: '#D8B4E2',
-        strokeWidth: 4,
+        fill: '#fcf0ff', // Warna ungu sangat muda
         selectable: false,
         evented: false
     });
+    canvasEditor.add(bgWarna);
 
-    // Buat teks judul di atas
-    const teksJudul = new fabric.Text('Your Aura Strip', {
-        left: 170, top: 30,
-        fontFamily: 'Quicksand',
-        fontSize: 24,
-        fontWeight: 'bold',
-        fill: '#4A3B52',
-        originX: 'center',
-        selectable: false,
-        evented: false
+    // 3. Masukkan Frame PNG yang baru kamu buat tadi
+    fabric.Image.fromURL('assets/frames/frame_aura.png', function(img) {
+        img.set({
+            left: 0,
+            top: 0,
+            scaleX: 340 / img.width,
+            scaleY: 950 / img.height,
+            selectable: false,
+            evented: false
+        });
+        canvasEditor.add(img);
+        
+        // FRAME HARUS DI PALING DEPAN (biar foto di belakang lubang)
+        img.bringToFront(); 
+        canvasEditor.renderAll();
     });
-
-    canvasEditor.add(background, border, teksJudul);
 }
 // Panggil saat pertama kali dimuat
 gambarBingkaiDasar();
