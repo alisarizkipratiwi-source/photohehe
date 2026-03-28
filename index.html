@@ -26,18 +26,14 @@
             <label for="inputUpload" id="tombolUpload" class="btn btn-upload-label">📂 Unggah 3 Gambar Kustom</label>
             <input type="file" id="inputUpload" multiple accept="image/*" style="display:none">
         </div>
-        
         <div class="frame-panel">
-            <h2>✨ Hasil ✨</h2>
+            <h2>✨ Editor Canvas ✨</h2>
             
-            <div id="finalWrapper">
-                <div class="strip-header-text">Your Aura Strip</div>
-                <div id="stripContainer">
-                    <div style="color:#aaa; padding: 50px 0;">Sesi Foto atau Unggah untuk melihat hasil...</div>
-                </div>
-                <div class="frame-label">Aura-Fiksasi (v1.5)</div>
-                <div class="frame-title">#CUSTOM-STRIP</div>
+            <div id="finalWrapper" style="display: flex; justify-content: center; background: #f9f9f9;">
+                <canvas id="editorCanvas"></canvas>
             </div>
+            
+            <button id="tombolTambahStiker" class="btn btn-upload-label" style="background-color: #ffb7b2;">🎀 Tambah Stiker Pita</button>
             
             <button id="tombolDownload" class="btn" disabled>💾 Unduh Photo Strip (.png)</button>
         </div>
